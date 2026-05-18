@@ -55,7 +55,7 @@ jobs:
           echo "changed=true" >> "$GITHUB_OUTPUT"
 
           # Download source files from GitHub at the tagged version
-          BASE_URL="https://raw.githubusercontent.com/badlogic/pi-mono/v${LATEST}/packages/ai/src/providers"
+          BASE_URL="https://raw.githubusercontent.com/earendil-works/pi/v${LATEST}/packages/ai/src/providers"
           mkdir -p /tmp/pi-latest
 
           LATEST_ANTHROPIC="/tmp/pi-latest/anthropic.ts"
@@ -129,7 +129,7 @@ jobs:
           TITLE="Sync: PI updated $PINNED -> $LATEST"
 
           {
-            echo "Pi updated from \`$PINNED\` to [\`$LATEST\`](https://github.com/badlogic/pi-mono/releases/tag/v$LATEST)."
+            echo "Pi updated from \`$PINNED\` to [\`$LATEST\`](https://github.com/earendil-works/pi/releases/tag/v$LATEST)."
             echo ""
             echo "The following files that we mirror have changed. Review the diffs and check if our mirrored functions need updating:"
             echo ""

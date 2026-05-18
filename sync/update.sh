@@ -7,7 +7,7 @@ set -euo pipefail
 
 VERSION="${1:-$(npm show @earendil-works/pi-coding-agent version)}"
 SYNC_DIR="$(cd "$(dirname "$0")" && pwd)"
-BASE_URL="https://raw.githubusercontent.com/badlogic/pi-mono/v${VERSION}/packages/ai/src/providers"
+BASE_URL="https://raw.githubusercontent.com/earendil-works/pi/v${VERSION}/packages/ai/src/providers"
 
 echo "Updating pinned references to pi $VERSION..."
 

@@ -2,7 +2,7 @@
 
 [![npm](https://img.shields.io/npm/v/@twogiants/pi-anthropic-vertex)](https://www.npmjs.com/package/@twogiants/pi-anthropic-vertex)
 
-Anthropic Claude models on Google Cloud Vertex AI for [pi](https://github.com/badlogic/pi-mono).
+Anthropic Claude models on Google Cloud Vertex AI for [pi](https://github.com/earendil-works/pi).
 
 ## Compatibility
 
