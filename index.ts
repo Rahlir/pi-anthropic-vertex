@@ -120,8 +120,15 @@ function mapStreamToAnthropicOptions(
   options: SimpleStreamOptions | undefined,
   model: Model<Api>,
 ): AnthropicOptions {
-  const baseMaxTokens =
-    options?.maxTokens ?? (model.maxTokens > 0 ? model.maxTokens : undefined);
+  const DEFAULT_MAX_OUTPUT_TOKENS = 32000;
+  const CONTEXT_WINDOW_OUTPUT_TOLERANCE = 1024;
+  const defaultMaxTokens =
+    model.maxTokens > 0
+      ? model.maxTokens >= model.contextWindow - CONTEXT_WINDOW_OUTPUT_TOLERANCE
+        ? Math.min(model.maxTokens, DEFAULT_MAX_OUTPUT_TOKENS)
+        : model.maxTokens
+      : undefined;
+  const baseMaxTokens = options?.maxTokens ?? defaultMaxTokens;
 
   return {
     // AnthropicVertex extends BaseAnthropic, as Anthropic does, but it has no
@@ -147,7 +154,7 @@ function mapStreamToAnthropicOptions(
 // client internally, ignoring our injected AnthropicVertex client. Instead we
 // call stream() directly and replicate the thinking mapping from streamSimpleAnthropic()
 // here. Keep in sync with:
-// https://github.com/earendil-works/pi/blob/v0.74.1/packages/ai/src/providers/anthropic.ts#L728
+// https://github.com/earendil-works/pi/blob/v0.75.1/packages/ai/src/providers/anthropic.ts#L728
 function buildThinkingOptions(
   maxTokens: number | undefined,
   options: SimpleStreamOptions | undefined,
@@ -182,7 +189,7 @@ function buildThinkingOptions(
   };
 }
 
-// Keep in sync with: https://github.com/earendil-works/pi/blob/v0.74.1/packages/ai/src/providers/anthropic.ts#L692
+// Keep in sync with: https://github.com/earendil-works/pi/blob/v0.75.1/packages/ai/src/providers/anthropic.ts#L692
 function supportsAdaptiveThinking(modelId: string): boolean {
   return (
     modelId.includes("opus-4-6") ||
@@ -194,7 +201,7 @@ function supportsAdaptiveThinking(modelId: string): boolean {
   );
 }
 
-// Keep in sync with: https://github.com/earendil-works/pi/blob/v0.74.1/packages/ai/src/providers/anthropic.ts#L708
+// Keep in sync with: https://github.com/earendil-works/pi/blob/v0.75.1/packages/ai/src/providers/anthropic.ts#L708
 function mapThinkingLevelToEffort(
   model: Model<Api>,
   level: SimpleStreamOptions["reasoning"],
@@ -215,7 +222,7 @@ function mapThinkingLevelToEffort(
   }
 }
 
-// Keep in sync with: https://github.com/earendil-works/pi/blob/v0.74.1/packages/ai/src/providers/simple-options.ts#L26
+// Keep in sync with: https://github.com/earendil-works/pi/blob/v0.75.1/packages/ai/src/providers/simple-options.ts#L36
 function adjustMaxTokensForThinking(
   baseMaxTokens: number,
   modelMaxTokens: number,
