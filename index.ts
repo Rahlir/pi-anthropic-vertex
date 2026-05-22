@@ -120,15 +120,7 @@ function mapStreamToAnthropicOptions(
   options: SimpleStreamOptions | undefined,
   model: Model<Api>,
 ): AnthropicOptions {
-  const DEFAULT_MAX_OUTPUT_TOKENS = 32000;
-  const CONTEXT_WINDOW_OUTPUT_TOLERANCE = 1024;
-  const defaultMaxTokens =
-    model.maxTokens > 0
-      ? model.maxTokens >= model.contextWindow - CONTEXT_WINDOW_OUTPUT_TOLERANCE
-        ? Math.min(model.maxTokens, DEFAULT_MAX_OUTPUT_TOKENS)
-        : model.maxTokens
-      : undefined;
-  const baseMaxTokens = options?.maxTokens ?? defaultMaxTokens;
+  const baseMaxTokens = options?.maxTokens;
 
   return {
     // AnthropicVertex extends BaseAnthropic, as Anthropic does, but it has no
@@ -154,7 +146,7 @@ function mapStreamToAnthropicOptions(
 // client internally, ignoring our injected AnthropicVertex client. Instead we
 // call stream() directly and replicate the thinking mapping from streamSimpleAnthropic()
 // here. Keep in sync with:
-// https://github.com/earendil-works/pi/blob/v0.75.1/packages/ai/src/providers/anthropic.ts#L728
+// https://github.com/earendil-works/pi/blob/v0.75.4/packages/ai/src/providers/anthropic.ts#L728
 function buildThinkingOptions(
   maxTokens: number | undefined,
   options: SimpleStreamOptions | undefined,
@@ -174,9 +166,8 @@ function buildThinkingOptions(
       effort: mapThinkingLevelToEffort(model, options.reasoning),
     };
 
-  const base = maxTokens ?? model.maxTokens;
   const adjusted = adjustMaxTokensForThinking(
-    base,
+    maxTokens,
     model.maxTokens,
     options.reasoning,
     options.thinkingBudgets,
@@ -189,7 +180,7 @@ function buildThinkingOptions(
   };
 }
 
-// Keep in sync with: https://github.com/earendil-works/pi/blob/v0.75.1/packages/ai/src/providers/anthropic.ts#L692
+// Keep in sync with: https://github.com/earendil-works/pi/blob/v0.75.4/packages/ai/src/providers/anthropic.ts#L692
 function supportsAdaptiveThinking(modelId: string): boolean {
   return (
     modelId.includes("opus-4-6") ||
@@ -201,7 +192,7 @@ function supportsAdaptiveThinking(modelId: string): boolean {
   );
 }
 
-// Keep in sync with: https://github.com/earendil-works/pi/blob/v0.75.1/packages/ai/src/providers/anthropic.ts#L708
+// Keep in sync with: https://github.com/earendil-works/pi/blob/v0.75.4/packages/ai/src/providers/anthropic.ts#L708
 function mapThinkingLevelToEffort(
   model: Model<Api>,
   level: SimpleStreamOptions["reasoning"],
@@ -222,9 +213,9 @@ function mapThinkingLevelToEffort(
   }
 }
 
-// Keep in sync with: https://github.com/earendil-works/pi/blob/v0.75.1/packages/ai/src/providers/simple-options.ts#L36
+// Keep in sync with: https://github.com/earendil-works/pi/blob/v0.75.4/packages/ai/src/providers/simple-options.ts#L26
 function adjustMaxTokensForThinking(
-  baseMaxTokens: number,
+  baseMaxTokens: number | undefined,
   modelMaxTokens: number,
   reasoningLevel: ThinkingLevel,
   customBudgets?: ThinkingBudgets,
@@ -241,7 +232,10 @@ function adjustMaxTokensForThinking(
     reasoningLevel === "xhigh" ? "high" : reasoningLevel
   ) as keyof ThinkingBudgets;
   let thinkingBudget = budgets[level]!;
-  const maxTokens = Math.min(baseMaxTokens + thinkingBudget, modelMaxTokens);
+  const maxTokens =
+    baseMaxTokens === undefined
+      ? modelMaxTokens
+      : Math.min(baseMaxTokens + thinkingBudget, modelMaxTokens);
 
   if (maxTokens <= thinkingBudget) {
     thinkingBudget = Math.max(0, maxTokens - minOutputTokens);
