@@ -36,3 +36,14 @@ After the manual changes to `index.ts` and the "keep in sync" link versions and 
 
 This bumps the patch version, updates pinned references, commits, pushes,
 tags, pushes the tag (triggers the release pipeline), and closes the issue.
+
+## Release notes
+
+After the release pipeline creates the GitHub Release, update it with notes:
+
+```bash
+gh release edit v<new-version> --repo twoGiants/pi-anthropic-vertex --notes '<notes>'
+```
+
+Follow the style of previous releases: start with "Synced with pi v<version>." on
+its own line, then a blank line, then a bullet list of what changed in our code.
