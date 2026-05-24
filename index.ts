@@ -68,6 +68,7 @@ export default function (pi: ExtensionAPI) {
     ({
       id,
       name,
+      compat,
       reasoning,
       thinkingLevelMap,
       input,
@@ -77,6 +78,7 @@ export default function (pi: ExtensionAPI) {
     }) => ({
       id,
       name,
+      compat,
       reasoning,
       thinkingLevelMap,
       input,
@@ -96,7 +98,8 @@ export default function (pi: ExtensionAPI) {
       context,
       options?: SimpleStreamOptions,
     ) => {
-      const client = createVertexClient(model.id, options?.headers);
+      const isAdaptive = model.compat?.forceAdaptiveThinking === true;
+      const client = createVertexClient(isAdaptive, options?.headers);
       const anthropicOptions = mapStreamToAnthropicOptions(
         client,
         options,
@@ -146,7 +149,7 @@ function mapStreamToAnthropicOptions(
 // client internally, ignoring our injected AnthropicVertex client. Instead we
 // call stream() directly and replicate the thinking mapping from streamSimpleAnthropic()
 // here. Keep in sync with:
-// https://github.com/earendil-works/pi/blob/v0.75.4/packages/ai/src/providers/anthropic.ts#L728
+// https://github.com/earendil-works/pi/blob/v0.75.5/packages/ai/src/providers/anthropic.ts#L732
 function buildThinkingOptions(
   maxTokens: number | undefined,
   options: SimpleStreamOptions | undefined,
@@ -160,7 +163,7 @@ function buildThinkingOptions(
   if (!options?.reasoning || !model.reasoning)
     return { thinkingEnabled: false };
 
-  if (supportsAdaptiveThinking(model.id))
+  if (model.compat?.forceAdaptiveThinking === true)
     return {
       thinkingEnabled: true,
       effort: mapThinkingLevelToEffort(model, options.reasoning),
@@ -180,19 +183,7 @@ function buildThinkingOptions(
   };
 }
 
-// Keep in sync with: https://github.com/earendil-works/pi/blob/v0.75.4/packages/ai/src/providers/anthropic.ts#L692
-function supportsAdaptiveThinking(modelId: string): boolean {
-  return (
-    modelId.includes("opus-4-6") ||
-    modelId.includes("opus-4.6") ||
-    modelId.includes("opus-4-7") ||
-    modelId.includes("opus-4.7") ||
-    modelId.includes("sonnet-4-6") ||
-    modelId.includes("sonnet-4.6")
-  );
-}
-
-// Keep in sync with: https://github.com/earendil-works/pi/blob/v0.75.4/packages/ai/src/providers/anthropic.ts#L708
+// Keep in sync with: https://github.com/earendil-works/pi/blob/v0.75.5/packages/ai/src/providers/anthropic.ts#L712
 function mapThinkingLevelToEffort(
   model: Model<Api>,
   level: SimpleStreamOptions["reasoning"],
@@ -213,7 +204,7 @@ function mapThinkingLevelToEffort(
   }
 }
 
-// Keep in sync with: https://github.com/earendil-works/pi/blob/v0.75.4/packages/ai/src/providers/simple-options.ts#L26
+// Keep in sync with: https://github.com/earendil-works/pi/blob/v0.75.5/packages/ai/src/providers/simple-options.ts#L26
 function adjustMaxTokensForThinking(
   baseMaxTokens: number | undefined,
   modelMaxTokens: number,
@@ -255,23 +246,23 @@ function adjustMaxTokensForThinking(
 type Profile = "adaptive" | "legacy";
 const sharedClient = new Map<Profile, AnthropicVertex>();
 function createVertexClient(
-  modelId: string,
+  isAdaptive: boolean,
   requestHeaders?: Record<string, string>,
 ): AnthropicVertex {
   if (requestHeaders && Object.keys(requestHeaders).length > 0) {
     const opts = createVertexClientOpts(
       project,
       region,
-      modelId,
+      isAdaptive,
       requestHeaders,
     );
     return new AnthropicVertex(opts);
   }
 
-  const profile = supportsAdaptiveThinking(modelId) ? "adaptive" : "legacy";
+  const profile: Profile = isAdaptive ? "adaptive" : "legacy";
   let client = sharedClient.get(profile);
   if (!client) {
-    const opts = createVertexClientOpts(project, region, modelId);
+    const opts = createVertexClientOpts(project, region, isAdaptive);
     client = new AnthropicVertex(opts);
     sharedClient.set(profile, client);
   }
@@ -282,13 +273,13 @@ function createVertexClient(
 export function createVertexClientOpts(
   projectId: string | undefined,
   region: string,
-  modelId: string,
+  isAdaptive: boolean,
   requestHeaders?: Record<string, string>,
 ): ClientOptions {
-  // Adaptive models (4.6+) have interleaved thinking built-in and reject the
-  // header
+  // Adaptive thinking models have interleaved thinking built in, so skip the
+  // beta header.
   const betaHeaders: string[] = [];
-  if (!supportsAdaptiveThinking(modelId))
+  if (!isAdaptive)
     betaHeaders.push("interleaved-thinking-2025-05-14");
 
   // Merge any user-supplied beta values

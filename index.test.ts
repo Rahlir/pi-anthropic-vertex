@@ -7,7 +7,7 @@ describe("createVertexClientOpts", () => {
     const opts = createVertexClientOpts(
       "proj",
       "us-east5",
-      "claude-sonnet-4-5",
+      false,
     );
     assert.deepEqual(opts.defaultHeaders, {
       "anthropic-beta": "interleaved-thinking-2025-05-14",
@@ -18,7 +18,7 @@ describe("createVertexClientOpts", () => {
     const opts = createVertexClientOpts(
       "proj",
       "us-east5",
-      "claude-sonnet-4-6",
+      true,
     );
     assert.equal(opts.defaultHeaders, undefined);
   });
@@ -27,7 +27,7 @@ describe("createVertexClientOpts", () => {
     const opts = createVertexClientOpts(
       "proj",
       "us-east5",
-      "claude-sonnet-4-6",
+      true,
       {
         "x-custom": "value",
       },
@@ -39,7 +39,7 @@ describe("createVertexClientOpts", () => {
     const opts = createVertexClientOpts(
       "proj",
       "us-east5",
-      "claude-sonnet-4-5",
+      false,
       {
         "anthropic-beta": "my-beta",
         "x-other": "keep",
@@ -55,7 +55,7 @@ describe("createVertexClientOpts", () => {
     const opts = createVertexClientOpts(
       "proj",
       "us-east5",
-      "claude-sonnet-4-6",
+      true,
       {
         "anthropic-beta": "",
         "x-other": "keep",
@@ -68,7 +68,7 @@ describe("createVertexClientOpts", () => {
     const opts = createVertexClientOpts(
       "proj",
       "us-east5",
-      "claude-sonnet-4-5",
+      false,
       {
         "anthropic-beta": "interleaved-thinking-2025-05-14",
       },
@@ -82,7 +82,7 @@ describe("createVertexClientOpts", () => {
     const opts = createVertexClientOpts(
       "proj",
       "us-east5",
-      "claude-sonnet-4-6",
+      true,
       {
         "anthropic-beta": " beta-a , , beta-b ",
       },
@@ -96,7 +96,7 @@ describe("createVertexClientOpts", () => {
     const opts = createVertexClientOpts(
       "proj",
       "us-east5",
-      "claude-sonnet-4-6",
+      true,
       {
         "anthropic-beta": "custom-beta",
       },
@@ -110,7 +110,7 @@ describe("createVertexClientOpts", () => {
     const opts = createVertexClientOpts(
       "my-project",
       "europe-west1",
-      "claude-sonnet-4-6",
+      true,
     );
     assert.equal(opts.projectId, "my-project");
     assert.equal(opts.region, "europe-west1");
