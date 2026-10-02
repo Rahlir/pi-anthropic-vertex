@@ -1,6 +1,8 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { normalizeContext, type Api, type Model } from "@earendil-works/pi-ai/compat";
 import { createVertexClientOpts } from "./index.ts";
+import { buildBaseOptions } from "./simple-options.ts";
 
 describe("createVertexClientOpts", () => {
   it("sets interleaved-thinking header for non-adaptive model with no request headers", () => {
@@ -114,5 +116,21 @@ describe("createVertexClientOpts", () => {
     );
     assert.equal(opts.projectId, "my-project");
     assert.equal(opts.region, "europe-west1");
+  });
+});
+
+describe("buildBaseOptions", () => {
+  // pi >= 0.86 sends the system prompt as a leading system message. Branch
+  // summarization and compaction hit this with no prior assistant usage.
+  it("estimates a context with a leading system message", () => {
+    const context = normalizeContext({
+      systemPrompt: "You are a summarizer.",
+      messages: [
+        { role: "user", content: [{ type: "text", text: "hi" }], timestamp: 1 },
+      ],
+    });
+    const model = { contextWindow: 200000, maxTokens: 64000 } as Model<Api>;
+    const options = buildBaseOptions(model, context, { maxTokens: 4096 });
+    assert.equal(options.maxTokens, 4096);
   });
 });

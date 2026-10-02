@@ -37,10 +37,10 @@ import {
   type AnthropicMessagesCompat,
   type AnthropicOptions,
   type Api,
-  type Context,
   type Model,
   type ProviderHeaders,
   type SimpleStreamOptions,
+  type TranscriptContext,
 } from "@earendil-works/pi-ai/compat";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import {
@@ -88,7 +88,7 @@ export default function (pi: ExtensionAPI) {
     }) => ({
       id,
       name,
-      compat,
+      compat: withoutServerSideFallback(compat),
       reasoning,
       thinkingLevelMap,
       input,
@@ -134,7 +134,7 @@ function mapStreamToAnthropicOptions(
   client: AnthropicVertex,
   options: SimpleStreamOptions | undefined,
   model: Model<Api>,
-  context: Context,
+  context: TranscriptContext,
 ): AnthropicOptions {
   const base = buildBaseOptions(model, context, options, options?.apiKey);
 
@@ -145,18 +145,21 @@ function mapStreamToAnthropicOptions(
     // because pi's internal stream() only calls "messages.stream()".
     client: client as unknown as Anthropic,
     ...base,
-    ...buildThinkingOptions(options, model, context),
+    toolChoice: options?.toolChoice,
+    ...buildThinkingOptions(options, model, context, base.maxTokens),
   };
 }
+
 // We can't call streamSimple() because it creates its own Anthropic
 // client internally, ignoring our injected AnthropicVertex client. Instead we
 // call stream() directly and replicate the thinking mapping from streamSimple()
 // here. Keep in sync with:
-// https://github.com/earendil-works/pi/blob/v0.80.10/packages/ai/src/api/anthropic-messages.ts#L786
+// https://github.com/earendil-works/pi/blob/v0.87.1/packages/ai/src/api/anthropic-messages.ts#L858
 function buildThinkingOptions(
   options: SimpleStreamOptions | undefined,
   model: Model<Api>,
-  context: Context,
+  context: TranscriptContext,
+  baseMaxTokens: number | undefined,
 ): {
   thinkingEnabled: boolean;
   effort?: AnthropicOptions["effort"];
@@ -174,7 +177,7 @@ function buildThinkingOptions(
     };
 
   const adjusted = adjustMaxTokensForThinking(
-    options.maxTokens,
+    baseMaxTokens,
     model.maxTokens,
     options.reasoning,
     options.thinkingBudgets,
@@ -192,7 +195,7 @@ function buildThinkingOptions(
   };
 }
 
-// Keep in sync with: https://github.com/earendil-works/pi/blob/v0.80.10/packages/ai/src/api/anthropic-messages.ts#L766
+// Keep in sync with: https://github.com/earendil-works/pi/blob/v0.87.1/packages/ai/src/api/anthropic-messages.ts#L838
 function mapThinkingLevelToEffort(
   model: Model<Api>,
   level: SimpleStreamOptions["reasoning"],
@@ -216,6 +219,21 @@ function mapThinkingLevelToEffort(
 /**
  * Helpers
  */
+
+/**
+ * Drop `allowedFallbackModels` from a model's compat flags.
+ *
+ * Pi sends a `fallbacks` request field for models that declare them, which is an
+ * Anthropic first-party beta. Vertex rejects such requests with
+ * "fallbacks: Extra inputs are not permitted".
+ */
+function withoutServerSideFallback(
+  compat: AnthropicMessagesCompat | undefined,
+): AnthropicMessagesCompat | undefined {
+  if (!compat?.allowedFallbackModels) return compat;
+  const { allowedFallbackModels: _unsupported, ...rest } = compat;
+  return rest;
+}
 
 // Reuse a client across calls when no per-request headers are set, to avoid
 // re-reading credentials on every stream call. Two cached profiles are kept
