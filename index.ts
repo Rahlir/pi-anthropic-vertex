@@ -81,6 +81,7 @@ export default function (pi: ExtensionAPI) {
       compat,
       reasoning,
       thinkingLevelMap,
+      promptCache,
       input,
       cost,
       contextWindow,
@@ -91,6 +92,8 @@ export default function (pi: ExtensionAPI) {
       compat: withoutServerSideFallback(compat),
       reasoning,
       thinkingLevelMap,
+      // A model without a cache lifetime is ineligible for pi's cache warming.
+      promptCache,
       input,
       cost,
       contextWindow,
